@@ -1,19 +1,14 @@
-from data_augmentation import *
 import cv2
 import torch
 import os
 from PIL import Image
-# from data_manager import DataManager
-import scipy.io
-from model import Net
-import utils
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 from dataset import CustomDataset
 from classifier import Classifier
 from sampler import CustomSampler
+# import scipy.io
 
-# ciao
 
 def print_img(title, img):
     # img = torch.permute(img, (1, 2, 0)).numpy()
@@ -63,12 +58,12 @@ if __name__ == "__main__":
 
     classifier = Classifier(resnet_type=50, output_size=output_size, mlp_on_top=True, device=device)
 
-    train_dataloader = DataLoader(train_set,
-                                  batch_sampler=CustomSampler(train_set.data, num_classes, num_instances), num_workers=2)
+    train_dataloader = DataLoader(train_set, batch_sampler=CustomSampler(train_set.data, num_classes, num_instances),
+                                  num_workers=2)
 
     query_dataloader = DataLoader(query_set, batch_size=num_classes*num_instances, shuffle=False, num_workers=2)
     test_dataloader = DataLoader(test_set, batch_size=num_classes*num_instances, shuffle=False, num_workers=2)
 
     print("Starting training...")
-    classifier.train_net(num_epochs=100, learning_rate=8*10**(-6), train_set=train_dataloader,
+    classifier.train_net(num_epochs=150, learning_rate=8*10**(-6), train_set=train_dataloader,
                          query_set=query_dataloader, test_set=test_dataloader)

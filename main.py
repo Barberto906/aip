@@ -44,7 +44,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
 
-    num_classes = 10  # must be at least 3
+    num_classes = 10  # must be at least 3 #todo Se ci sono problemi di memoria riduci il numero di classi
     num_instances = 5
     output_size = 1024
 

@@ -1,4 +1,3 @@
-import torch
 from torch import nn
 import torchvision.models as models
 
@@ -31,7 +30,7 @@ class Net(nn.Module):
 
     def print_net(self):
         # for name, param in self.backbone.named_parameters():
-            # print("{} -> {}".format(name, param.shape))
+        #     print("{} -> {}".format(name, param.shape))
 
         for layer in self.backbone.layer4[-1:]:
             print(layer.stride)

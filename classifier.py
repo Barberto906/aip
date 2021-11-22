@@ -1,9 +1,9 @@
 import torch
 import os
-from time import perf_counter
 from model import Net
 from loss import loss_function
-from evaluation import cosine_similarity, accuracy
+from eval_utils import cosine_similarity, accuracy
+# from time import perf_counter
 
 
 class Classifier:
@@ -63,25 +63,36 @@ class Classifier:
 
                 output = self.net(imgs)
 
-                loss_start = perf_counter()
+                # loss_start = perf_counter()
                 loss = loss_function(labels, output)
-                loss_stop = perf_counter()
+                # loss_stop = perf_counter()
                 # print("loss computation time:", loss_stop - loss_start)
 
                 # if not torch.isnan(loss).item():
                 epoch_loss += loss.item()
 
-                loss_backward_start = perf_counter()
+                # loss_backward_start = perf_counter()
                 if loss.item() != 0:
                     loss.backward()
                     optimizer.step()
                     optimizer.zero_grad()
-                loss_backward_stop = perf_counter()
+                # loss_backward_stop = perf_counter()
                 # print("loss_backward, optimizer.step() and optimizer.zero_grad() time:",
                 # loss_backward_stop - loss_backward_start)
 
             print("Epoch {} average loss value {}".format(epoch, epoch_loss / len(train_set)))
 
+            scores = self.validation(query_set, test_set)
+
+            if scores[0] >= best_scores[0] and scores[1] >= best_scores[1] and scores[2] >= best_scores[2]:
+                print("Best model found, saving!")
+                torch.save(self.net.state_dict(),
+                           os.path.dirname(os.path.abspath(__file__)) + '/best_classifier.pth')
+                best_scores[0] = scores[0]
+                best_scores[1] = scores[1]
+                best_scores[2] = scores[2]
+
+            """"
             # validation step every 3 epochs
             if epoch % 3 == 2:
                 scores = self.validation(query_set, test_set)
@@ -93,7 +104,7 @@ class Classifier:
                     best_scores[0] = scores[0]
                     best_scores[1] = scores[1]
                     best_scores[2] = scores[2]
-
+            """
             # saving after each epoch
             self.save_checkpoint(self.net, optimizer, epoch, best_scores, loss)
     ####################################################################################################################

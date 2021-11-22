@@ -5,10 +5,6 @@ import torch
 from PIL import Image
 import re
 
-"""
-possibili migliorie: aggiungere controlli 
-"""
-
 
 class CustomDataset(Dataset):
     def __init__(self, path, used_for_train):
@@ -32,12 +28,9 @@ class CustomDataset(Dataset):
     def __getitem__(self, i):
         img_path = os.path.join(self.path, self.data[i][0])
         img = Image.open(img_path)
-        id = int(self.data[i][1])
+        pid = int(self.data[i][1])
         camera_id = int(self.data[i][2])
-        return self.preprocessing(img), torch.tensor(id), torch.tensor(camera_id)
+        return self.preprocessing(img), torch.tensor(pid), torch.tensor(camera_id)
 
     def __len__(self):
         return len(self.data)
-
-
-# data_set = CustomDataset(path="FinalDataset/train_set_prova", used_for_train=True)

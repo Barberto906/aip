@@ -36,9 +36,9 @@ def cosine_similarity(query_embeddings, test_embeddings):
     numerator = torch.sum(numerator, dim=2)
 
     a_2 = a ** 2
-    a_2 = torch.sum(a_2, dim=2)
+    a_2 = torch.sum(a_2, dim=2)  # a_2 = torch.sum(a**2, dim=2)
     b_2 = b ** 2
-    b_2 = torch.sum(b_2, dim=2)
+    b_2 = torch.sum(b_2, dim=2)  # b_2 = torch.sum(b**, dim=2)
 
     denominator = torch.sqrt(a_2) * torch.sqrt(b_2)
     result = numerator / denominator
@@ -68,4 +68,3 @@ test_embd = torch.tensor([[1, 2, 3], [-4, 5, 6], [7, 8, -9]])
 
 cosine_similarity(query_embd, test_embd)
 """
-

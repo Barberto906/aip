@@ -51,10 +51,10 @@ if __name__ == "__main__":
     train_set = CustomDataset(path=os.path.dirname(os.path.abspath(__file__)) + "/FinalDataset/bounding_box_train",
                               used_for_train=True)
 
-    query_set = CustomDataset(path=os.path.dirname(os.path.abspath(__file__)) + "/FinalDataset/bounding_box_test",
-                              used_for_train=False)
-    test_set = CustomDataset(path=os.path.dirname(os.path.abspath(__file__)) + "/FinalDataset/query",
+    test_set = CustomDataset(path=os.path.dirname(os.path.abspath(__file__)) + "/FinalDataset/bounding_box_test",
                              used_for_train=False)
+    query_set = CustomDataset(path=os.path.dirname(os.path.abspath(__file__)) + "/FinalDataset/query",
+                              used_for_train=False)
 
     classifier = Classifier(resnet_type=50, output_size=output_size, mlp_on_top=True, device=device)
 

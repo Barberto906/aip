@@ -2,7 +2,9 @@ import torch
 import os
 from model import Net
 from loss import loss_function
-from eval_utils import cosine_similarity, accuracy
+from eval_utils import cosine_similarity, accuracy, print_img
+from data_augmentation import *
+from PIL import Image
 # from time import perf_counter
 
 
@@ -32,12 +34,37 @@ class Classifier:
         optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.net.parameters()), lr=learning_rate)
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         best_scores = checkpoint['best scores']
+        print(best_scores)
         epoch = checkpoint['epoch']
         loss = checkpoint['loss']
 
         print("Checkpoint loaded!")
 
         return optimizer, epoch, loss, best_scores
+    ####################################################################################################################
+
+    # save model
+    def save_model(self, model, test_set_embeddings=None, best_scores=None):
+        print("Saving model and training info!")
+        torch.save({
+            'model_state_dict': model.state_dict(),
+            'test_set_embeddings': test_set_embeddings,
+            'best_scores': best_scores,
+
+        }, os.path.dirname(os.path.abspath(__file__)) + "/best_model_and_embd.pth")
+
+    ####################################################################################################################
+
+    # load model
+    def load_model(self, path):
+        checkpoint = torch.load(path, map_location=self.device)
+        self.net.load_state_dict(checkpoint['model_state_dict'])
+        test_set_embeddings = checkpoint['test_set_embeddings']
+        best_scores = checkpoint['best_scores']
+
+        print("Pretrained model loaded!")
+
+        return test_set_embeddings, best_scores
     ####################################################################################################################
 
     # train the model
@@ -48,6 +75,7 @@ class Classifier:
         # check if there is a checkpoint to continue training otherwise start from scratch
         if checkpoint_path is not None:
             optimizer, starting_epoch, loss, best_scores = self.load_checkpoint(checkpoint_path, learning_rate)
+
         else:
             optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.net.parameters()), lr=learning_rate)
             best_scores = [0., 0., 0.]
@@ -56,8 +84,12 @@ class Classifier:
         for epoch in range(starting_epoch, num_epochs):
             print("Epoch:", epoch)
             epoch_loss = 0
-            for index, (imgs, labels, _) in enumerate(train_set):
-                # print("train_set batch index:", index)
+            for index, (imgs, labels, _, _) in enumerate(train_set):
+                print("train_set batch index:", index)
+                
+                if index == 0:
+                    print("numero di batch:", len(train_set))
+                    
                 imgs = imgs.to(self.device)
                 labels = labels.to(self.device)
 
@@ -80,14 +112,17 @@ class Classifier:
                 # print("loss_backward, optimizer.step() and optimizer.zero_grad() time:",
                 # loss_backward_stop - loss_backward_start)
 
-            print("Epoch {} average loss value {}".format(epoch, epoch_loss / len(train_set)))
+            print("Epoch {} average loss value: {}".format(epoch, epoch_loss / len(train_set)))
+ 
+            # saving after each epoch
+            self.save_checkpoint(self.net, optimizer, epoch, best_scores, loss)
 
-            scores = self.validation(query_set, test_set)
+            scores, test_embeddings = self.validation(query_set, test_set)
 
             if scores[0] >= best_scores[0] and scores[1] >= best_scores[1] and scores[2] >= best_scores[2]:
                 print("Best model found, saving!")
-                torch.save(self.net.state_dict(),
-                           os.path.dirname(os.path.abspath(__file__)) + '/best_classifier.pth')
+                self.save_model(self.net, test_embeddings, scores)
+
                 best_scores[0] = scores[0]
                 best_scores[1] = scores[1]
                 best_scores[2] = scores[2]
@@ -105,8 +140,6 @@ class Classifier:
                     best_scores[1] = scores[1]
                     best_scores[2] = scores[2]
             """
-            # saving after each epoch
-            self.save_checkpoint(self.net, optimizer, epoch, best_scores, loss)
     ####################################################################################################################
 
     def evaluate(self, batch):
@@ -123,7 +156,11 @@ class Classifier:
         test_labels = list()
 
         # Pre-computing embeddings for test set
-        for index, (imgs, labels, _) in enumerate(test_set):
+        for index, (imgs, labels, _, _) in enumerate(test_set):
+            print("test_set batch index:", index)
+            if index == 0:
+                print("numero di batch:", len(test_set))
+
             imgs = imgs.to(self.device)
             labels = labels.to(self.device)
 
@@ -138,7 +175,11 @@ class Classifier:
         # print("Test set embeddings computed")
 
         # Computing query set embeddings
-        for index, (imgs, labels, _) in enumerate(query_set):
+        for index, (imgs, labels, _, _) in enumerate(query_set):
+            print("query_set batch index:", index)
+            if index == 0:
+                print("numero di batch:", len(query_set))
+
             imgs = imgs.to(self.device)
             labels = labels.to(self.device)
 
@@ -164,4 +205,76 @@ class Classifier:
         print("Accuracy @ 3:", acc3)
         print("Accuracy @ 5:", acc5)
 
-        return [acc1, acc3, acc5]
+        return [acc1, acc3, acc5], test_embeddings
+    ####################################################################################################################
+
+    def evaluate_image(self, image_path, test_dict, testset_path, rank=10, print_results=False):
+        img_preprocessing = build_transforms(is_train=False)
+        img = Image.open(image_path)
+        img = img_preprocessing(img)
+
+        img_embedding = self.evaluate(img.unsqueeze(0))
+
+        test_embeddings = torch.vstack(list(test_dict.values()))
+        test_images_names = list(test_dict.keys())
+
+        distances = cosine_similarity(img_embedding, test_embeddings)
+
+        indices = torch.argsort(distances, dim=1, descending=True)
+        indices = indices[0, 0:rank]
+
+        result_imgs = list()
+
+        for i in indices.tolist():
+            result_imgs.append(test_images_names[i])
+
+        query_img_name = image_path.split('/')[-1]
+
+        if print_results:
+            title = 'QUERY IMAGE - {im}'.format(im=query_img_name)
+            print_img(title, image_path)
+
+            for index, img in enumerate(result_imgs):
+                title = 'RESULT IMAGE #{i} - {im}'.format(i=index+1, im=img)
+                print_img(title, testset_path+img)
+
+        return result_imgs
+
+
+"""
+    def test_set_and_save(self, test_set):
+
+        self.net.load_state_dict(torch.load(os.path.dirname(os.path.abspath(__file__)) + '/best_classifier.pth',
+                                 map_location=self.device))
+
+        test_embeddings = list()
+        test_labels = list()
+        test_images_names = list()  #
+
+        # Pre-computing embeddings for test set
+        for index, (imgs, labels, _, imgs_names) in enumerate(test_set):
+            print("test_set batch index:", index)
+            if index == 0:
+                print("numero di batch:", len(test_set))
+
+            imgs = imgs.to(self.device)
+            labels = labels.to(self.device)
+
+            # test_embeddings.append(self.evaluate(imgs))
+            test_embeddings += self.evaluate(imgs)
+            test_labels += labels
+            test_images_names += imgs_names  #
+
+        # test_embeddings = torch.vstack(test_embeddings)
+
+        test_embd_dict = {}
+
+        #print("len(test_embeddings):", len(test_embeddings))
+        #print("len(test_images_names):", len(test_images_names))
+
+        for i, img in enumerate(test_images_names):
+            #print(i)
+            test_embd_dict[img] = test_embeddings[i]
+
+        self.save_model(self.net, test_embd_dict) 
+"""

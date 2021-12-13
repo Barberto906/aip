@@ -25,7 +25,23 @@ a comparative loss with auxiliary losses such as classification or
 center loss [5, 7, 12, 13, 16]
 
 """
+
 import torch
+import cv2
+
+
+def print_img(title, img_path):
+    img = cv2.imread(img_path)
+    width = int(img.shape[1]*2.5)
+    heigth = int(img.shape[0]*2.5)
+    img = cv2.resize(img, (width, heigth))
+
+    cv2.namedWindow(title)
+    cv2.imshow(title, img)
+    cv2.resizeWindow(title, 500, 400)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 def cosine_similarity(query_embeddings, test_embeddings):
@@ -52,19 +68,10 @@ def accuracy(query_labels, test_labels):  # [n_query, label], [n_test, label], [
 
     for idx in range(0, len(query_labels)):
         for i in range(test_labels.shape[1]):
-            aus = 0
             if test_labels[idx, i] == query_labels[idx]:
-                aus += 1.
-            acc += aus / test_labels.shape[1]
+                acc += 1.
+                break
 
     acc = acc / len(query_labels)
     return acc
 
-
-"""
-query_embd = torch.tensor([[1, 0, 1], [-4, 5, -9]])
-
-test_embd = torch.tensor([[1, 2, 3], [-4, 5, 6], [7, 8, -9]])
-
-cosine_similarity(query_embd, test_embd)
-"""

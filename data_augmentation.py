@@ -45,7 +45,7 @@ class RandomErasing:
                 else:
                     img[0, x1:x1 + h, y1:y1 + w] = self.mean[0]
 
-                #img = np.transpose(img, (1, 2, 0))
+                # img = np.transpose(img, (1, 2, 0))
                 return img
 
         return img
@@ -58,10 +58,10 @@ def build_transforms(config=False, is_train=True):
     if is_train:
         transform = T.Compose([
             T.Resize(image_size),
-            #T.RandomHorizontalFlip(p=config.prob),
+            # T.RandomHorizontalFlip(p=config.prob),
             T.RandomHorizontalFlip(p=0.2),
             T.Pad(10),
-            #T.RandomCrop(config.image_size),
+            # T.RandomCrop(config.image_size),
             T.RandomCrop(image_size),
             T.ToTensor(),
             normalize_transform,

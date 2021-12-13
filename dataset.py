@@ -30,7 +30,7 @@ class CustomDataset(Dataset):
         img = Image.open(img_path)
         pid = int(self.data[i][1])
         camera_id = int(self.data[i][2])
-        return self.preprocessing(img), torch.tensor(pid), torch.tensor(camera_id)
+        return self.preprocessing(img), torch.tensor(pid), torch.tensor(camera_id), self.data[i][0]
 
     def __len__(self):
         return len(self.data)
